@@ -1,14 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "./languageManagement.css";
-const FROM_LANGUAGES = ["en", "fr", "de", "es"];
-const STATUS_OPTIONS = ["Pending", "Approved", "Rejected"];
-const ROWS_PER_PAGE = 5;
 
+// Language library utility
+const LANGUAGE_LIB = [
+  { code: "en", name: "English" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "es", name: "Spanish" },
+  { code: "it", name: "Italian" },
+  { code: "jp", name: "Japanese" },
+  // Add more as needed
+];
+const getLanguageName = (code: string) => LANGUAGE_LIB.find(l => l.code === code)?.name || code;
+
+const ROWS_PER_PAGE = 5;
 
 interface TranslationRow {
   string_id: string;
-  from_language: string;
   from_value: string;
   to_values: string[];
   status: string;
@@ -17,69 +26,56 @@ interface TranslationRow {
 const initialRows: TranslationRow[] = [
   {
     string_id: "STR001",
-    from_language: "en",
     from_value: "Hello World!",
     to_values: ["Bonjour le monde!", "Salut tout le monde!"],
     status: "Pending",
   },
   {
     string_id: "STR002",
-    from_language: "en",
     from_value: "Goodbye!",
     to_values: ["Au revoir!"],
     status: "Approved",
   },
   {
     string_id: "STR003",
-    from_language: "fr",
     from_value: "Merci",
     to_values: ["Thank you", "Thanks", "Thx"],
     status: "Pending",
   },
-  // ...more rows
 ];
 
 export default function LanuageMangement() {
   const { projectId, variantsId, languageId } = useParams();
   const [rows, setRows] = useState<TranslationRow[]>(initialRows);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [fromLangFilter, setFromLangFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [editIdx, setEditIdx] = useState<{row: number, idx: number} | null>(null);
+  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const [addModal, setAddModal] = useState(false);
+  const [newString, setNewString] = useState({ string_id: "", from_value: "", to_values: [""], status: "" });
+  const [fromLanguage, setFromLanguage] = useState(LANGUAGE_LIB[0].code);
+  const [toValuesEdit, setToValuesEdit] = useState<{ row: number; idx: number } | null>(null);
   const [editValue, setEditValue] = useState("");
 
   // Filtering
   let filtered = rows.filter(row =>
     (row.string_id.toLowerCase().includes(search.toLowerCase()) ||
      row.from_value.toLowerCase().includes(search.toLowerCase()) ||
-     row.to_values.some(val => val.toLowerCase().includes(search.toLowerCase()))) &&
-    (!statusFilter || row.status === statusFilter) &&
-    (!fromLangFilter || row.from_language === fromLangFilter)
+     row.to_values.some(val => val.toLowerCase().includes(search.toLowerCase())))
   );
   const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
   const pageData = filtered.slice((page-1)*ROWS_PER_PAGE, page*ROWS_PER_PAGE);
 
   // Handlers
-  const handleFromLangChange = (rowIdx: number, lang: string) => {
-    setRows(rows => rows.map((row, idx) => idx === rowIdx ? { ...row, from_language: lang } : row));
+  const handleAddString = () => {
+    setRows([{ ...newString, to_values: newString.to_values.filter(v => v.trim() !== "") }, ...rows]);
+    setAddModal(false);
+    setNewString({ string_id: "", from_value: "", to_values: [""], status: "" });
   };
-  const handleAddToValue = (rowIdx: number) => {
-    setRows(rows => rows.map((row, idx) => idx === rowIdx ? { ...row, to_values: [...row.to_values, ""] } : row));
-    setEditIdx({row: rowIdx, idx: rows[rowIdx].to_values.length});
-    setEditValue("");
-  };
-  const handleEditToValue = (rowIdx: number, idx: number) => {
-    setEditIdx({row: rowIdx, idx});
-    setEditValue(rows[rowIdx].to_values[idx]);
-  };
-  const handleSaveToValue = (rowIdx: number, idx: number) => {
+  const handleToValueChange = (rowIdx: number, idx: number, value: string) => {
     setRows(rows => rows.map((row, rIdx) => rIdx === rowIdx ? {
       ...row,
-      to_values: row.to_values.map((val, vIdx) => vIdx === idx ? editValue : val)
+      to_values: row.to_values.map((v, vIdx) => vIdx === idx ? value : v)
     } : row));
-    setEditIdx(null);
-    setEditValue("");
   };
   const handleDeleteToValue = (rowIdx: number, idx: number) => {
     setRows(rows => rows.map((row, rIdx) => rIdx === rowIdx ? {
@@ -87,8 +83,19 @@ export default function LanuageMangement() {
       to_values: row.to_values.filter((_, vIdx) => vIdx !== idx)
     } : row));
   };
-  const handleStatusChange = (rowIdx: number, status: string) => {
-    setRows(rows => rows.map((row, idx) => idx === rowIdx ? { ...row, status } : row));
+  const handleAddToValue = (rowIdx: number) => {
+    setRows(rows => rows.map((row, rIdx) => rIdx === rowIdx && row.to_values.length < 3 ? {
+      ...row,
+      to_values: [...row.to_values, ""]
+    } : row));
+  };
+  const handleEditRow = (rowIdx: number) => {
+    setAddModal(true);
+    setNewString({ ...rows[rowIdx] });
+    setRows(rows => rows.filter((_, idx) => idx !== rowIdx));
+  };
+  const handleDeleteRow = (rowIdx: number) => {
+    setRows(rows => rows.filter((_, idx) => idx !== rowIdx));
   };
   // Length check: green if all to_values <= 50 chars, else red
   const isLengthOk = (vals: string[]) => vals.every(val => val.length <= 50);
@@ -98,26 +105,88 @@ export default function LanuageMangement() {
     if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
   };
 
-  // Reset page on filter/search
-  React.useEffect(() => { setPage(1); }, [search, statusFilter, fromLangFilter]);
+  // Global from language change
+  const handleFromLangChange = (lang: string) => {
+    setFromLanguage(lang);
+  };
+  useEffect(() => {
+    setRows(rows => rows.map(row => ({ ...row }))); // force rerender
+  }, [fromLanguage]);
+
+  // Reset page on search
+  useEffect(() => { setPage(1); }, [search]);
+
+  // Get language name from code
+  const fromLanguageName = getLanguageName(fromLanguage);
+  const toLanguageName = getLanguageName(languageId as string);
 
   return (
     <div className="lm-container">
       <h1 className="lm-header">Language Management</h1>
       <div className="lm-header" style={{fontWeight: 500, fontSize: 16, marginBottom: 16}}>
-        Project ID: {projectId} | Variant ID: {variantsId} | To Language: {languageId}
+        Project ID: {projectId} | Variant ID: {variantsId} | To Language: {toLanguageName}
       </div>
-      <div className="lm-filters">
-        <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="">All Statuses</option>
-          {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-        <select value={fromLangFilter} onChange={e => setFromLangFilter(e.target.value)}>
-          <option value="">All From Languages</option>
-          {FROM_LANGUAGES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
+      {/* Search bar and add button row */}
+      <div className="lm-filters" style={{display: 'flex', alignItems: 'center', marginBottom: 18}}>
+        <div style={{flex: 3}}>
+          <div className="searchbox-container">
+            <i className="fa-solid fa-magnifying-glass searchbox-icon" style={{ cursor: 'pointer' }}></i>
+            <input
+              type="text"
+              className="searchbox-input"
+              placeholder="Search by string, from value, or to value..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+        <div style={{flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16}}>
+          <select className="lm-translation-dropdown" value={fromLanguage} onChange={e => handleFromLangChange(e.target.value)}>
+            {LANGUAGE_LIB.map(lang => <option key={lang.code} value={lang.code}>{lang.name}</option>)}
+          </select>
+          <button className="lm-add-btn" onClick={() => { setAddModal(true); setNewString({ string_id: "", from_value: "", to_values: [""], status: "" }); }}>+ Add String</button>
+        </div>
       </div>
+      {addModal && (
+        <div className="modal-overlay">
+          <div className="modal-content modal-content-smooth">
+            <h3 style={{ marginBottom: 8 }}>Add/Edit String</h3>
+            <div className="modal-form-smooth">
+              <div className="modal-row">
+                <label>String ID
+                  <input value={newString.string_id} onChange={e => setNewString({ ...newString, string_id: e.target.value })} required />
+                </label>
+                <label>From Value
+                  <input value={newString.from_value} onChange={e => setNewString({ ...newString, from_value: e.target.value })} required />
+                </label>
+              </div>
+              <div className="modal-row">
+                <label>Status
+                  <input value={newString.status} onChange={e => setNewString({ ...newString, status: e.target.value })} required />
+                </label>
+              </div>
+              <div className="modal-row">
+                <label>To Values</label>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+                  {newString.to_values.map((val, idx) => (
+                    <div key={idx} style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                      <input value={val} onChange={e => setNewString({ ...newString, to_values: newString.to_values.map((v, vIdx) => vIdx === idx ? e.target.value : v) })} />
+                      <button className="lm-delete-btn" onClick={() => setNewString({ ...newString, to_values: newString.to_values.filter((_, vIdx) => vIdx !== idx) })}><i className="fa-solid fa-trash"></i></button>
+                    </div>
+                  ))}
+                  {newString.to_values.length < 3 && (
+                    <button className="lm-add-btn" onClick={() => setNewString({ ...newString, to_values: [...newString.to_values, ""] })}><i className="fa-solid fa-plus"></i> Add</button>
+                  )}
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button className="lm-save-btn" onClick={handleAddString}>Save</button>
+                <button className="lm-delete-btn" onClick={() => setAddModal(false)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <table className="lm-table">
         <thead>
           <tr>
@@ -126,54 +195,68 @@ export default function LanuageMangement() {
             <th style={{textAlign: 'center'}}>Length Check</th>
             <th style={{textAlign: 'center'}}>Status</th>
             <th style={{textAlign: 'center'}}>Menu</th>
+            <th></th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {pageData.length === 0 ? (
-            <tr><td colSpan={5} style={{textAlign: 'center', color: '#888'}}>No strings found.</td></tr>
+            <tr><td colSpan={7} style={{textAlign: 'center', color: '#888'}}>No strings found.</td></tr>
           ) : pageData.map((row, rowIdx) => (
             <tr key={row.string_id}>
               <td>{row.string_id}</td>
               <td className="lm-translation-cell">
-                <div className="lm-translation-row">
-                  <select className="lm-translation-dropdown" value={row.from_language} onChange={e => handleFromLangChange((page-1)*ROWS_PER_PAGE+rowIdx, e.target.value)}>
-                    {FROM_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                  </select>
-                  <span className="lm-translation-value">{row.from_value}</span>
-                </div>
-                <div className="lm-translation-row" style={{marginTop: 6}}>
-                  <span className="lm-to-lang-label">To ({languageId}):</span>
-                  {row.to_values.map((val, idx) => (
-                    <span key={idx} className="lm-to-lang-value">
-                      {editIdx && editIdx.row === (page-1)*ROWS_PER_PAGE+rowIdx && editIdx.idx === idx ? (
-                        <>
-                          <input value={editValue} onChange={e => setEditValue(e.target.value)} style={{padding: 2, borderRadius: 4, border: '1px solid #ccc', width: 120}} />
-                          <button className="lm-save-btn" onClick={() => handleSaveToValue((page-1)*ROWS_PER_PAGE+rowIdx, idx)} style={{marginLeft: 2}}>Save</button>
-                        </>
-                      ) : (
-                        <>
-                          <span style={{marginRight: 2}}>{val}</span>
-                          <button className="lm-edit-btn" onClick={() => handleEditToValue((page-1)*ROWS_PER_PAGE+rowIdx, idx)} style={{marginLeft: 2}}>Edit</button>
-                        </>
-                      )}
-                      <button className="lm-delete-btn" onClick={() => handleDeleteToValue((page-1)*ROWS_PER_PAGE+rowIdx, idx)} style={{marginLeft: 2}}>Delete</button>
-                    </span>
-                  ))}
-                  {row.to_values.length < 3 && (
-                    <button className="lm-add-btn" onClick={() => handleAddToValue((page-1)*ROWS_PER_PAGE+rowIdx)} style={{marginLeft: 8}}>Add</button>
-                  )}
+                <div className="lm-translation-row" style={{alignItems: 'flex-start', flexDirection: 'column', gap: 0}}>
+                  <div style={{display: 'flex', alignItems: 'center', marginBottom: 6}}>
+                    <span className=" lm-lang-label" style={{fontWeight: 500, color: '#1976d2'}}>{fromLanguageName}</span>
+                    <span style={{marginLeft: 8}}>{row.from_value}</span>
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2}}>
+                    <span className="lm-to-lang-label lm-lang-label" style={{color: '#1976d2'}}>{toLanguageName}:</span>
+                    {row.to_values.map((val, idx) => (
+                      <div key={idx} style={{position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 2}}>
+                        <input
+                          value={val}
+                          onChange={e => handleToValueChange((page-1)*ROWS_PER_PAGE+rowIdx, idx, e.target.value)}
+                          className="lm-translation-value"
+                          style={{padding: 2, borderRadius: 4, border: '1px solid #ccc', width: 180}}
+                          onFocus={() => setToValuesEdit({ row: (page-1)*ROWS_PER_PAGE+rowIdx, idx })}
+                          onBlur={() => setToValuesEdit(null)}
+                        />
+                        <span className="to-value-actions" style={{display: 'flex', alignItems: 'center', marginLeft: 4, opacity: (toValuesEdit && toValuesEdit.row === (page-1)*ROWS_PER_PAGE+rowIdx && toValuesEdit.idx === idx) ? 1 : 0, transition: 'opacity 0.2s'}}>
+                          <button className="lm-edit-btn" style={{marginLeft: 2, background: 'transparent', color: '#1976d2', boxShadow: 'none'}}><i className="fa-solid fa-pen"></i></button>
+                          <button className="lm-delete-btn" style={{marginLeft: 2, background: 'transparent', color: '#d32f2f', boxShadow: 'none'}} onMouseDown={e => { e.preventDefault(); handleDeleteToValue((page-1)*ROWS_PER_PAGE+rowIdx, idx); }}><i className="fa-solid fa-trash"></i></button>
+                        </span>
+                      </div>
+                    ))}
+                    {row.to_values.length < 3 && (
+                      <button className="lm-add-btn" style={{marginTop: 4, width: 80}} onClick={() => handleAddToValue((page-1)*ROWS_PER_PAGE+rowIdx)}><i className="fa-solid fa-plus"></i> Add</button>
+                    )}
+                  </div>
                 </div>
               </td>
               <td style={{textAlign: 'center'}}>
                 <span className={`lm-dot ${isLengthOk(row.to_values) ? 'green' : 'red'}`}></span>
               </td>
               <td style={{textAlign: 'center'}}>
-                <select className="lm-status-select" value={row.status} onChange={e => handleStatusChange((page-1)*ROWS_PER_PAGE+rowIdx, e.target.value)}>
-                  {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
+                <span>{row.status}</span>
+              </td>
+              <td style={{textAlign: 'center', position: 'relative'}}>
+                <button className="lm-edit-btn" style={{background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6}} onClick={() => setMenuOpen((page-1)*ROWS_PER_PAGE+rowIdx)}>
+                  <i className="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                {menuOpen === (page-1)*ROWS_PER_PAGE+rowIdx && (
+                  <div style={{position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 120, padding: 8, display: 'flex', flexDirection: 'column', gap: 6}} onMouseLeave={() => setMenuOpen(null)}>
+                    <button className="lm-edit-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleEditRow((page-1)*ROWS_PER_PAGE+rowIdx); setMenuOpen(null); }}><i className="fa-solid fa-pen"></i> Edit</button>
+                    <button className="lm-delete-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleDeleteRow((page-1)*ROWS_PER_PAGE+rowIdx); setMenuOpen(null); }}><i className="fa-solid fa-trash"></i> Delete</button>
+                  </div>
+                )}
               </td>
               <td style={{textAlign: 'center'}}>
-                <button>Menu</button>
+                <i className="fa-regular fa-comment-dots" style={{fontSize: 18, color: '#888', cursor: 'pointer'}} title="Comments"></i>
+              </td>
+              <td style={{textAlign: 'center'}}>
+                <i className="fa-solid fa-clock-rotate-left" style={{fontSize: 18, color: '#888', cursor: 'pointer'}} title="Activity"></i>
               </td>
             </tr>
           ))}
