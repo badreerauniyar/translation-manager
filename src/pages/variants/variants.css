@@ -1,0 +1,105 @@
+.variants-mgmt-container {
+    background: #fff;
+    min-height: 100vh;
+    padding: 40px 0 0 0;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  }
+  
+  .variants-mgmt-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 60px 20px 60px;
+  }
+  
+  .variants-mgmt-header-right {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .variants-mgmt-subtitle {
+    font-size: 15px;
+    color: #888;
+    font-weight: 400;
+    margin-left: 10px;
+  }
+  
+  .variants-list-scroll {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    padding: 30px 60px 0 60px;
+    scrollbar-width: thin;
+    scrollbar-color: #1976d2 #e0eafc;
+  }
+  .variants-list-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+  .variants-list-scroll::-webkit-scrollbar-thumb {
+    background: #1976d2;
+    border-radius: 4px;
+  }
+  
+  .variant-card {
+    min-width: 320px;
+    background: linear-gradient(120deg, #4fd1c5 0%, #1976d2 100%);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
+    color: #fff;
+    padding: 28px 32px 22px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: relative;
+    transition: box-shadow 0.2s, transform 0.2s;
+    margin-bottom: 24px;
+  }
+  .variant-card:hover {
+    box-shadow: 0 12px 32px 0 rgba(25, 118, 210, 0.18);
+    transform: translateY(-4px) scale(1.03);
+  }
+  .variant-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .variant-card-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .variant-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .variant-card-desc {
+    font-size: 15px;
+    color: #e0eafc;
+    margin-bottom: 8px;
+  }
+  .variant-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .variant-card-branch {
+    font-size: 15px;
+    color: #fff;
+  }
+  .variant-card-branch span {
+    font-weight: 500;
+    margin-left: 6px;
+    color: #e0eafc;
+  }
+  .variant-card-status {
+    font-size: 15px;
+    color: #fff;
+    font-style: italic;
+    background: rgba(255,255,255,0.18);
+    border-radius: 12px;
+    padding: 4px 14px;
+    margin-left: 10px;
+  }
+  
