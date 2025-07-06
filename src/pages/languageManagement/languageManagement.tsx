@@ -49,7 +49,7 @@ export default function LanuageMangement() {
   const [rows, setRows] = useState<TranslationRow[]>(initialRows);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState<{row: number, type: 'cell' | 'row'} | null>(null);
   const [addModal, setAddModal] = useState(false);
   const [newString, setNewString] = useState({ string_id: "", from_value: "", to_values: [""], status: "" });
   const [fromLanguage, setFromLanguage] = useState(LANGUAGE_LIB[0].code);
@@ -119,6 +119,9 @@ export default function LanuageMangement() {
   // Get language name from code
   const fromLanguageName = getLanguageName(fromLanguage);
   const toLanguageName = getLanguageName(languageId as string);
+
+  const handleMenuOpen = (rowIdx: number, type: 'cell' | 'row') => setMenuOpen({ row: rowIdx, type });
+  const handleMenuClose = () => setMenuOpen(null);
 
   return (
     <div className="lm-container">
@@ -194,9 +197,9 @@ export default function LanuageMangement() {
             <th>Translation</th>
             <th style={{textAlign: 'center'}}>Length Check</th>
             <th style={{textAlign: 'center'}}>Status</th>
-            <th style={{textAlign: 'center'}}>Menu</th>
             <th></th>
             <th></th>
+            <th style={{textAlign: 'center'}}></th>
           </tr>
         </thead>
         <tbody>
@@ -205,10 +208,10 @@ export default function LanuageMangement() {
           ) : pageData.map((row, rowIdx) => (
             <tr key={row.string_id}>
               <td>{row.string_id}</td>
-              <td className="lm-translation-cell">
-                <div className="lm-translation-row" style={{alignItems: 'flex-start', flexDirection: 'column', gap: 0}}>
+              <td className="lm-translation-cell" style={{position: 'relative'}}>
+                <div className="lm-translation-row" style={{alignItems: 'flex-start', flexDirection: 'column', gap: 0, position: 'relative'}}>
                   <div style={{display: 'flex', alignItems: 'center', marginBottom: 6}}>
-                    <span className=" lm-lang-label" style={{fontWeight: 500, color: '#1976d2'}}>{fromLanguageName}</span>
+                    <span className="lm-lang-label" style={{fontWeight: 500, color: '#1976d2'}}>{fromLanguageName}</span>
                     <span style={{marginLeft: 8}}>{row.from_value}</span>
                   </div>
                   <div style={{display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2}}>
@@ -229,10 +232,16 @@ export default function LanuageMangement() {
                         </span>
                       </div>
                     ))}
-                    {row.to_values.length < 3 && (
-                      <button className="lm-add-btn" style={{marginTop: 4, width: 80}} onClick={() => handleAddToValue((page-1)*ROWS_PER_PAGE+rowIdx)}><i className="fa-solid fa-plus"></i> Add</button>
-                    )}
                   </div>
+                  {/* Menu button at the end of the cell */}
+                  <button className="lm-edit-btn" style={{background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6, position: 'absolute', top: 0, right: 0}} onClick={() => handleMenuOpen((page-1)*ROWS_PER_PAGE+rowIdx, 'cell')}>
+                    <i className="fa-solid fa-ellipsis-vertical"></i>
+                  </button>
+                  {menuOpen && menuOpen.row === (page-1)*ROWS_PER_PAGE+rowIdx && menuOpen.type === 'cell' && (
+                    <div style={{position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 140, padding: 8, display: 'flex', flexDirection: 'column', gap: 6}} onMouseLeave={handleMenuClose}>
+                      <button className="lm-add-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleAddToValue((page-1)*ROWS_PER_PAGE+rowIdx); handleMenuClose(); }}><i className="fa-solid fa-plus"></i> Add To-Value</button>
+                    </div>
+                  )}
                 </div>
               </td>
               <td style={{textAlign: 'center'}}>
@@ -241,22 +250,22 @@ export default function LanuageMangement() {
               <td style={{textAlign: 'center'}}>
                 <span>{row.status}</span>
               </td>
-              <td style={{textAlign: 'center', position: 'relative'}}>
-                <button className="lm-edit-btn" style={{background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6}} onClick={() => setMenuOpen((page-1)*ROWS_PER_PAGE+rowIdx)}>
-                  <i className="fa-solid fa-ellipsis-vertical"></i>
-                </button>
-                {menuOpen === (page-1)*ROWS_PER_PAGE+rowIdx && (
-                  <div style={{position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 120, padding: 8, display: 'flex', flexDirection: 'column', gap: 6}} onMouseLeave={() => setMenuOpen(null)}>
-                    <button className="lm-edit-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleEditRow((page-1)*ROWS_PER_PAGE+rowIdx); setMenuOpen(null); }}><i className="fa-solid fa-pen"></i> Edit</button>
-                    <button className="lm-delete-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleDeleteRow((page-1)*ROWS_PER_PAGE+rowIdx); setMenuOpen(null); }}><i className="fa-solid fa-trash"></i> Delete</button>
-                  </div>
-                )}
-              </td>
               <td style={{textAlign: 'center'}}>
                 <i className="fa-regular fa-comment-dots" style={{fontSize: 18, color: '#888', cursor: 'pointer'}} title="Comments"></i>
               </td>
               <td style={{textAlign: 'center'}}>
                 <i className="fa-solid fa-clock-rotate-left" style={{fontSize: 18, color: '#888', cursor: 'pointer'}} title="Activity"></i>
+              </td>
+              <td style={{textAlign: 'center', position: 'relative'}}>
+                <button className="lm-edit-btn" style={{background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6}} onClick={() => handleMenuOpen((page-1)*ROWS_PER_PAGE+rowIdx, 'row')}>
+                  <i className="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                {menuOpen && menuOpen.row === (page-1)*ROWS_PER_PAGE+rowIdx && menuOpen.type === 'row' && (
+                  <div style={{position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 120, padding: 8, display: 'flex', flexDirection: 'column', gap: 6}} onMouseLeave={handleMenuClose}>
+                    <button className="lm-edit-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleEditRow((page-1)*ROWS_PER_PAGE+rowIdx); handleMenuClose(); }}><i className="fa-solid fa-pen"></i> Edit</button>
+                    <button className="lm-delete-btn" style={{width: '100%', display: 'flex', alignItems: 'center', gap: 8}} onClick={() => { handleDeleteRow((page-1)*ROWS_PER_PAGE+rowIdx); handleMenuClose(); }}><i className="fa-solid fa-trash"></i> Delete</button>
+                  </div>
+                )}
               </td>
             </tr>
           ))}
