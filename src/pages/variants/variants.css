@@ -103,3 +103,87 @@
     margin-left: 10px;
   }
   
+  .variants-table-wrapper {
+    padding: 0 60px;
+    margin-top: 30px;
+  }
+  
+  .variants-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .variants-table th, .variants-table td {
+    padding: 16px 18px;
+    text-align: left;
+  }
+  .variants-table th {
+    background: #f5f7fa;
+    color: #1976d2;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 2px solid #e3e8ee;
+  }
+  .variants-table td {
+    font-size: 15px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .variants-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .edit-btn, .delete-btn {
+    border: none;
+    border-radius: 16px;
+    padding: 6px 16px;
+    font-size: 14px;
+    margin-right: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .edit-btn {
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+  .edit-btn:hover {
+    background: #bbdefb;
+  }
+  .delete-btn {
+    background: #ffebee;
+    color: #d32f2f;
+  }
+  .delete-btn:hover {
+    background: #ffcdd2;
+  }
+  
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    margin: 18px 0 0 0;
+  }
+  .pagination button {
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .pagination button:disabled {
+    background: #b0bec5;
+    cursor: not-allowed;
+  }
+  .pagination span {
+    font-size: 15px;
+    color: #1976d2;
+    font-weight: 500;
+  }
+  

@@ -12,9 +12,9 @@ function App() {
      <div>
       <Routes>
         <Route path="" element={<Projects/>} />
-        <Route path="variants/:id" element={<Variants/>} />
-        <Route path="languageSelection" element={<LanguageSelection/>} />
-         <Route path="languagemanagement" element={<LanuageMangement/>} />
+        <Route path="variants/:projectId" element={<Variants/>} />
+        <Route path="languageSelection/:projectId:/variantsId" element={<LanguageSelection/>} />
+         <Route path="languagemanagement/:projectId:/variantsId/:languageId" element={<LanuageMangement/>} />
       </Routes>
     </div>
     </>
