@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./variants.css";
 
 interface Variant {
@@ -169,6 +170,7 @@ export default function Variants() {
   const [confirm, setConfirm] = useState<{ open: boolean; variant: Variant | null }>({ open: false, variant: null });
   const [nextId, setNextId] = useState<number>(2); // Start from 2 if 1 is used
   const [page, setPage] = useState<number>(1);
+  const navigate = useNavigate();
 
   // Filtered and paginated data
   const filtered = variants.filter(v =>
@@ -245,7 +247,10 @@ export default function Variants() {
               <tr><td colSpan={8} style={{ textAlign: 'center', color: '#888' }}>No variants found.</td></tr>
             ) : (
               pageData.map((variant) => (
-                <tr key={variant.variant_id}>
+                <tr key={variant.variant_id} style={{ cursor: 'pointer' }} onClick={e => {
+                  if ((e.target as HTMLElement).tagName === 'BUTTON') return;
+                  navigate(`/languageSelection/${variant.project_id}/${variant.variant_id}`);
+                }}>
                   <td>{variant.name}</td>
                   <td>{variant.description}</td>
                   <td>{variant.branch}</td>
@@ -254,8 +259,8 @@ export default function Variants() {
                   <td>{new Date(variant.created_at).toLocaleString()}</td>
                   <td>{new Date(variant.updated_at).toLocaleString()}</td>
                   <td>
-                    <button className="edit-btn" onClick={() => openEdit(variant)}>Edit</button>
-                    <button className="delete-btn" onClick={() => openDelete(variant)}>Delete</button>
+                    <button className="edit-btn" onClick={ev => { ev.stopPropagation(); openEdit(variant); }}>Edit</button>
+                    <button className="delete-btn" onClick={ev => { ev.stopPropagation(); openDelete(variant); }}>Delete</button>
                   </td>
                 </tr>
               ))

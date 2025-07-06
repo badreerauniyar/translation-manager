@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./projects.css";
 
 interface Project {
@@ -128,6 +129,7 @@ export default function Projects() {
   const [modal, setModal] = useState<{ open: boolean; mode: "add" | "edit"; project: Project | null }>({ open: false, mode: "add", project: null });
   const [confirm, setConfirm] = useState<{ open: boolean; project: Project | null }>({ open: false, project: null });
   const [nextId, setNextId] = useState<number>(2); // Start from 2 if 1 is used
+  const navigate = useNavigate();
 
   // Filtered data
   const filtered = projects.filter(p =>
@@ -182,13 +184,17 @@ export default function Projects() {
               <tr><td colSpan={4} style={{ textAlign: 'center', color: '#888' }}>No projects found.</td></tr>
             ) : (
               filtered.map((project, idx) => (
-                <tr key={project.id}>
+                <tr key={project.id} style={{ cursor: 'pointer' }} onClick={e => {
+                  // Prevent navigation if clicking on an action button
+                  if ((e.target as HTMLElement).tagName === 'BUTTON') return;
+                  navigate(`/variants/${project.id}`);
+                }}>
                   <td>{project.name}</td>
                   <td>{project.type}</td>
                   <td>{project.status}</td>
                   <td>
-                    <button className="edit-btn" onClick={() => openEdit(project)}>Edit</button>
-                    <button className="delete-btn" onClick={() => openDelete(project)}>Delete</button>
+                    <button className="edit-btn" onClick={ev => { ev.stopPropagation(); openEdit(project); }}>Edit</button>
+                    <button className="delete-btn" onClick={ev => { ev.stopPropagation(); openDelete(project); }}>Delete</button>
                   </td>
                 </tr>
               ))

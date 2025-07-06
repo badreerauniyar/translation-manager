@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import "./langaugeSelection.css"
 
 interface Language {
@@ -187,6 +188,8 @@ function SearchBox({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 export function LanguageSelection() {
+    const { projectId, variantsId } = useParams();
+    const navigate = useNavigate();
     const [languages, setLanguages] = useState<Language[]>(initialLanguages);
     const [page, setPage] = useState<number>(1);
     const [search, setSearch] = useState<string>("");
@@ -231,9 +234,12 @@ export function LanguageSelection() {
 
     return (
         <div className="lang-mgmt-container">
+            <div style={{marginBottom: 16, color: '#1976d2', fontWeight: 500}}>
+                Project ID: {projectId} &nbsp;|&nbsp; Variant ID: {variantsId}
+            </div>
             <div className="lang-mgmt-header-flex">
                 <div className="lang-mgmt-header-left">
-                    <h2>Language Management</h2>
+                    <h2>Language Selection</h2>
                     <i
                         className="fa-solid fa-circle-question info-icon"
                         title="Manage and track all your translation languages here."
@@ -267,7 +273,10 @@ export function LanguageSelection() {
                 </thead>
                 <tbody>
                     {pageData.map((row, idx) => (
-                        <tr key={row.languageCode}>
+                        <tr key={row.languageCode} style={{ cursor: 'pointer' }} onClick={e => {
+                            if ((e.target as HTMLElement).tagName === 'BUTTON') return;
+                            navigate(`/languagemanagement/${projectId}/${variantsId}/${row.languageCode}`);
+                          }}>
                             <td>
                                 <span>
                                     <img
