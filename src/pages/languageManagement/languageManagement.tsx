@@ -42,6 +42,18 @@ const initialRows: TranslationRow[] = [
     to_values: ["Thank you", "Thanks", "Thx"],
     status: "Pending",
   },
+  {
+    string_id: "STR004",
+    from_value: "Welcome to our application",
+    to_values: ["Bienvenue dans notre application", "Bienvenue à notre app"],
+    status: "In Progress",
+  },
+  {
+    string_id: "STR005",
+    from_value: "Error occurred",
+    to_values: ["Une erreur s'est produite"],
+    status: "Rejected",
+  },
 ];
 
 export default function LanuageMangement() {
@@ -55,6 +67,12 @@ export default function LanuageMangement() {
   const [fromLanguage, setFromLanguage] = useState(LANGUAGE_LIB[0].code);
   const [toValuesEdit, setToValuesEdit] = useState<{ row: number; idx: number } | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  // Auto-resize textarea function
+  const autoResizeTextarea = (element: HTMLTextAreaElement) => {
+    element.style.height = 'auto';
+    element.style.height = element.scrollHeight + 'px';
+  };
 
   // Filtering
   let filtered = rows.filter(row =>
@@ -198,14 +216,13 @@ export default function LanuageMangement() {
           <tr>
             <th>String ID</th>
             <th>Translation</th>
-            <th style={{ textAlign: 'center' }}>Length Check</th>
             <th style={{ textAlign: 'center' }}>Status</th>
             <th style={{ textAlign: 'center' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {pageData.length === 0 ? (
-            <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888' }}>No strings found.</td></tr>
+            <tr><td colSpan={4} style={{ textAlign: 'center', color: '#888' }}>No strings found.</td></tr>
           ) : pageData.map((row, rowIdx) => (
             <tr key={row.string_id}>
               <td>{row.string_id}</td>
@@ -218,16 +235,51 @@ export default function LanuageMangement() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
                     <span className="lm-to-lang-label lm-lang-label" style={{ color: '#1976d2' }}>{toLanguageName}:</span>
                     {row.to_values.map((val, idx) => (
-                      <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 2 }}>
-                        <input
+                      <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', marginBottom: 2 }}>
+                        <textarea
                           value={val}
-                          onChange={e => handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, e.target.value)}
+                          onChange={e => {
+                            handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, e.target.value);
+                            autoResizeTextarea(e.target);
+                          }}
                           className="lm-translation-value"
-                          style={{ padding: 2, borderRadius: 4, border: '1px solid #ccc', width: 180 }}
-                          onFocus={() => setToValuesEdit({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, idx })}
-                          onBlur={() => setToValuesEdit(null)}
+                          style={{ 
+                            padding: '8px 12px', 
+                            borderRadius: '8px', 
+                            border: '1px solid #e0e0e0', 
+                            width: 180, 
+                            minHeight: 24,
+                            resize: 'none',
+                            fontFamily: 'inherit',
+                            fontSize: '14px',
+                            lineHeight: '1.4',
+                            overflow: 'hidden',
+                            backgroundColor: '#fafafa',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                            outline: 'none'
+                          }}
+                          onFocus={(e) => {
+                            setToValuesEdit({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, idx });
+                            e.target.style.borderColor = '#1976d2';
+                            e.target.style.backgroundColor = '#ffffff';
+                            e.target.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.15)';
+                          }}
+                          onBlur={(e) => {
+                            setToValuesEdit(null);
+                            e.target.style.borderColor = '#e0e0e0';
+                            e.target.style.backgroundColor = '#fafafa';
+                            e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                          }}
+                          rows={1}
+                          ref={(el) => {
+                            if (el) {
+                              autoResizeTextarea(el);
+                            }
+                          }}
                         />
-                        <span className="to-value-actions" style={{ display: 'flex', alignItems: 'center', marginLeft: 4, opacity: (toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx) ? 1 : 0, transition: 'opacity 0.2s' }}>
+                        <span className={`lm-dot ${getLengthChecks(row.to_values)[idx] ? 'green' : 'red'}`} style={{ marginLeft: 12, marginRight: 4, alignSelf: 'center' }}></span>
+                        <span className="to-value-actions" style={{ display: 'flex', alignItems: 'flex-start', marginLeft: 4, marginTop: 4, opacity: (toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx) ? 1 : 0, transition: 'opacity 0.2s' }}>
                           <button className="lm-edit-btn" style={{ marginLeft: 2, background: 'transparent', color: '#1976d2', boxShadow: 'none' }}><i className="fa-solid fa-pen"></i></button>
                           <button className="lm-delete-btn" style={{ marginLeft: 2, background: 'transparent', color: '#d32f2f', boxShadow: 'none' }} onMouseDown={e => { e.preventDefault(); handleDeleteToValue((page - 1) * ROWS_PER_PAGE + rowIdx, idx); }}><i className="fa-solid fa-trash"></i></button>
                         </span>
@@ -236,7 +288,7 @@ export default function LanuageMangement() {
                   </div>
                   {/* Menu button at the end of the cell */}
                   <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6, position: 'absolute', top: 44, right: 0 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'cell')}>
-                    <i className="fa-solid fa-ellipsis-vertical"></i>
+                    <i className="fa-solid fa-bars"></i>
                   </button>
                   {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === 'cell' && (
                     <div style={{ position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 140, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }} onMouseLeave={handleMenuClose}>
@@ -245,15 +297,26 @@ export default function LanuageMangement() {
                   )}
                 </div>
               </td>
+
               <td style={{ textAlign: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  {getLengthChecks(row.to_values).map((isOk, idx) => (
-                    <span key={idx} className={`lm-dot ${isOk ? 'green' : 'red'}`}></span>
-                  ))}
-                </div>
-              </td>
-              <td style={{ textAlign: 'center' }}>
-                <span>{row.status}</span>
+                <span style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '6px',
+                  color: row.status === 'Pending' ? '#ff9800' : 
+                         row.status === 'In Progress' ? '#1976d2' : 
+                         (row.status === 'Resolved' || row.status === 'Approved') ? '#4caf50' : 
+                         row.status === 'Rejected' ? '#f44336' : '#666'
+                }}>
+                  <i className={`fas ${
+                    row.status === 'Pending' ? 'fa-clock' : 
+                    row.status === 'In Progress' ? 'fa-spinner fa-spin' : 
+                    (row.status === 'Resolved' || row.status === 'Approved') ? 'fa-check-circle' : 
+                    row.status === 'Rejected' ? 'fa-times-circle' : 'fa-circle'
+                  }`}></i>
+                  {row.status}
+                </span>
               </td>
               <td style={{ textAlign: 'center', position: 'relative' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', minHeight: 80 }}>
