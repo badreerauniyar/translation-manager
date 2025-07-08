@@ -56,6 +56,50 @@ const initialRows: TranslationRow[] = [
   },
 ];
 
+// Mock activity data for demo
+const MOCK_ACTIVITIES = [
+  [
+    {
+      action: "Translation Option Updated",
+      user: "Issac Newton",
+      date: "2025-07-04 14:58:14"
+    },
+    {
+      action: "Translation Option Updated",
+      user: "Issac Newton",
+      date: "2025-06-30 15:46:41"
+    }
+  ],
+  [
+    {
+      action: "Translation Option Updated",
+      user: "Marie Curie",
+      date: "2025-07-01 10:12:00"
+    }
+  ],
+  [
+    {
+      action: "Translation Option Updated",
+      user: "Albert Einstein",
+      date: "2025-06-28 09:30:00"
+    }
+  ],
+  [
+    {
+      action: "Translation Option Updated",
+      user: "Ada Lovelace",
+      date: "2025-07-02 11:22:33"
+    }
+  ],
+  [
+    {
+      action: "Translation Option Updated",
+      user: "Nikola Tesla",
+      date: "2025-07-03 17:45:00"
+    }
+  ]
+];
+
 export default function LanuageMangement() {
   const { projectId, variantsId, languageId } = useParams();
   const [rows, setRows] = useState<TranslationRow[]>(initialRows);
@@ -67,6 +111,13 @@ export default function LanuageMangement() {
   const [fromLanguage, setFromLanguage] = useState(LANGUAGE_LIB[0].code);
   const [toValuesEdit, setToValuesEdit] = useState<{ row: number; idx: number } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [activityModal, setActivityModal] = useState<{ open: boolean, rowIdx: number | null }>({ open: false, rowIdx: null });
+  const [commentModal, setCommentModal] = useState<{ open: boolean, rowIdx: number | null }>({ open: false, rowIdx: null });
+  const [commentFields, setCommentFields] = useState<string[]>([""]);
+  // Update rowComments to store array of {text, user, date}
+  type Comment = { text: string; user: string; date: string };
+  const [rowComments, setRowComments] = useState<{ [rowIdx: number]: Comment[] }>({});
+  const [newComment, setNewComment] = useState("");
 
   // Auto-resize textarea function
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
@@ -226,75 +277,107 @@ export default function LanuageMangement() {
           ) : pageData.map((row, rowIdx) => (
             <tr key={row.string_id}>
               <td>{row.string_id}</td>
-              <td className="lm-translation-cell" style={{ position: 'relative' }}>
-                <div className="lm-translation-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 0, position: 'relative' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
-                    <span className="lm-lang-label" style={{ fontWeight: 500, color: '#1976d2' }}>{fromLanguageName}</span>
-                    <span style={{ marginLeft: 8 }}>{row.from_value}</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
-                    <span className="lm-to-lang-label lm-lang-label" style={{ color: '#1976d2' }}>{toLanguageName}:</span>
-                    {row.to_values.map((val, idx) => (
-                      <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', marginBottom: 2 }}>
-                        <textarea
-                          value={val}
-                          onChange={e => {
-                            handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, e.target.value);
-                            autoResizeTextarea(e.target);
-                          }}
-                          className="lm-translation-value"
-                          style={{ 
-                            padding: '8px 12px', 
-                            borderRadius: '8px', 
-                            border: '1px solid #e0e0e0', 
-                            width: 180, 
-                            minHeight: 24,
-                            resize: 'none',
-                            fontFamily: 'inherit',
-                            fontSize: '14px',
-                            lineHeight: '1.4',
-                            overflow: 'hidden',
-                            backgroundColor: '#fafafa',
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                            outline: 'none'
-                          }}
-                          onFocus={(e) => {
-                            setToValuesEdit({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, idx });
-                            e.target.style.borderColor = '#1976d2';
-                            e.target.style.backgroundColor = '#ffffff';
-                            e.target.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.15)';
-                          }}
-                          onBlur={(e) => {
-                            setToValuesEdit(null);
-                            e.target.style.borderColor = '#e0e0e0';
-                            e.target.style.backgroundColor = '#fafafa';
-                            e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                          }}
-                          rows={1}
-                          ref={(el) => {
-                            if (el) {
-                              autoResizeTextarea(el);
-                            }
-                          }}
-                        />
-                        <span className={`lm-dot ${getLengthChecks(row.to_values)[idx] ? 'green' : 'red'}`} style={{ marginLeft: 12, marginRight: 4, alignSelf: 'center' }}></span>
-                        <span className="to-value-actions" style={{ display: 'flex', alignItems: 'flex-start', marginLeft: 4, marginTop: 4, opacity: (toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx) ? 1 : 0, transition: 'opacity 0.2s' }}>
-                          <button className="lm-edit-btn" style={{ marginLeft: 2, background: 'transparent', color: '#1976d2', boxShadow: 'none' }}><i className="fa-solid fa-pen"></i></button>
-                          <button className="lm-delete-btn" style={{ marginLeft: 2, background: 'transparent', color: '#d32f2f', boxShadow: 'none' }} onMouseDown={e => { e.preventDefault(); handleDeleteToValue((page - 1) * ROWS_PER_PAGE + rowIdx, idx); }}><i className="fa-solid fa-trash"></i></button>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Menu button at the end of the cell */}
-                  <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6, position: 'absolute', top: 44, right: 0 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'cell')}>
-                    <i className="fa-solid fa-bars"></i>
-                  </button>
-                  {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === 'cell' && (
-                    <div style={{ position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 140, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }} onMouseLeave={handleMenuClose}>
-                      <button className="lm-add-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => { handleAddToValue((page - 1) * ROWS_PER_PAGE + rowIdx); handleMenuClose(); }}><i className="fa-solid fa-plus"></i> Add To-Value</button>
+              <td className="lm-translation-cell">
+                <div style={{ display: 'flex', gap: 16 }}>
+                  {/* Left column - Translation content */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                      <span className="lm-lang-label" style={{ fontWeight: 500, color: '#1976d2' }}>{fromLanguageName}</span>
+                      <span style={{ marginLeft: 8 }}>{row.from_value}</span>
                     </div>
-                  )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+                      <span className="lm-to-lang-label lm-lang-label" style={{ color: '#1976d2' }}>{toLanguageName}:</span>
+                      {row.to_values.map((val, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 2 }}>
+                          <textarea
+                            value={val}
+                            onChange={e => {
+                              handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, e.target.value);
+                              autoResizeTextarea(e.target);
+                            }}
+                            className="lm-translation-value"
+                            style={{ 
+                              padding: '8px 12px', 
+                              borderRadius: '8px', 
+                              border: '1px solid #e0e0e0', 
+                              width: 180, 
+                              minHeight: 24,
+                              resize: 'none',
+                              fontFamily: 'inherit',
+                              fontSize: '14px',
+                              lineHeight: '1.4',
+                              overflow: 'hidden',
+                              backgroundColor: '#fafafa',
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                              outline: 'none'
+                            }}
+                            onFocus={(e) => {
+                              setToValuesEdit({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, idx });
+                              e.target.style.borderColor = '#1976d2';
+                              e.target.style.backgroundColor = '#ffffff';
+                              e.target.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.15)';
+                            }}
+                            onBlur={(e) => {
+                              setToValuesEdit(null);
+                              e.target.style.borderColor = '#e0e0e0';
+                              e.target.style.backgroundColor = '#fafafa';
+                              e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                            }}
+                            rows={1}
+                            ref={(el) => {
+                              if (el) {
+                                autoResizeTextarea(el);
+                              }
+                            }}
+                          />
+                          <span className={`lm-dot ${getLengthChecks(row.to_values)[idx] ? 'green' : 'red'}`} style={{ marginLeft: 12, marginRight: 4, alignSelf: 'center' }}></span>
+                          <span className="to-value-actions" style={{ display: 'flex', alignItems: 'flex-start', marginLeft: 4, marginTop: 4, opacity: (toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx) ? 1 : 0, transition: 'opacity 0.2s' }}>
+                            <button className="lm-edit-btn" style={{ marginLeft: 2, background: 'transparent', color: '#1976d2', boxShadow: 'none' }}><i className="fa-solid fa-pen"></i></button>
+                            <button className="lm-delete-btn" style={{ marginLeft: 2, background: 'transparent', color: '#d32f2f', boxShadow: 'none' }} onMouseDown={e => { e.preventDefault(); handleDeleteToValue((page - 1) * ROWS_PER_PAGE + rowIdx, idx); }}><i className="fa-solid fa-trash"></i></button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Right column - Menu button */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 40, position: 'relative' }}>
+                    <button 
+                      className="lm-edit-btn" 
+                      style={{ 
+                        background: 'transparent', 
+                        color: '#1976d2', 
+                        fontSize: 18, 
+                        padding: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }} 
+                      onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'cell')}
+                    >
+                      <i className="fa-solid fa-bars"></i>
+                    </button>
+                    {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === 'cell' && (
+                      <div style={{ 
+                        position: 'absolute', 
+                        right: 0, 
+                        top: '50%', 
+                        transform: 'translateY(-50%)',
+                        background: '#fff', 
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)', 
+                        borderRadius: 8, 
+                        zIndex: 10, 
+                        minWidth: 140, 
+                        padding: 8, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 6 
+                      }} onMouseLeave={handleMenuClose}>
+                        <button className="lm-add-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => { handleAddToValue((page - 1) * ROWS_PER_PAGE + rowIdx); handleMenuClose(); }}><i className="fa-solid fa-plus"></i> Add To-Value</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </td>
 
@@ -320,8 +403,21 @@ export default function LanuageMangement() {
               </td>
               <td style={{ textAlign: 'center', position: 'relative' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', minHeight: 80 }}>
-                  <i className="fa-regular fa-comment-dots" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Comments"></i>
-                  <i className="fa-solid fa-clock-rotate-left" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Activity"></i>
+                  <i
+                    className="fa-regular fa-comment-dots"
+                    style={{ fontSize: 18, color: '#888', cursor: 'pointer' }}
+                    title="Comments"
+                    onClick={() => {
+                      setCommentModal({ open: true, rowIdx: (page - 1) * ROWS_PER_PAGE + rowIdx });
+                      setNewComment("");
+                    }}
+                  ></i>
+                  <i
+                    className="fa-solid fa-clock-rotate-left"
+                    style={{ fontSize: 18, color: '#888', cursor: 'pointer' }}
+                    title="Activity"
+                    onClick={() => setActivityModal({ open: true, rowIdx: (page - 1) * ROWS_PER_PAGE + rowIdx })}
+                  ></i>
                   {/* <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'row')}> */}
                     {/* <i className="fa-solid fa-ellipsis-vertical"></i> */}
                     <i className="fas fa-bars" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Menu" onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'row')}></i>
@@ -343,6 +439,102 @@ export default function LanuageMangement() {
         <span>Page {page} of {totalPages || 1}</span>
         <button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages || totalPages === 0}>&gt;</button>
       </div>
+      {activityModal.open && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-content modal-content-smooth" style={{ minWidth: 380, maxWidth: 420, padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px 12px 24px', borderBottom: '1px solid #eee', fontWeight: 600, fontSize: 18 }}>Activities</div>
+            <div style={{ padding: 24, background: '#fafbfc', minHeight: 180 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {(MOCK_ACTIVITIES[activityModal.rowIdx ?? 0] || []).map((act, idx, arr) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
+                    {/* Timeline dot and line */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: 16, minWidth: 18 }}>
+                      <span style={{
+                        width: 12, height: 12, borderRadius: 6, background: '#4fd1c5', border: '2px solid #fff', boxShadow: '0 0 0 2px #4fd1c5', marginBottom: 2
+                      }}></span>
+                      {idx !== arr.length - 1 && (
+                        <span style={{ width: 2, flex: 1, background: '#e0f7fa', minHeight: 24 }}></span>
+                      )}
+                    </div>
+                    {/* Activity content */}
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>{act.action}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <span style={{ background: '#f3f6f9', color: '#1976d2', borderRadius: 6, padding: '2px 8px', fontSize: 13, fontWeight: 500, letterSpacing: 0.2 }}>{act.user}</span>
+                      </div>
+                      <div style={{ color: '#888', fontSize: 13 }}>{act.date}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ padding: 16, textAlign: 'right', borderTop: '1px solid #eee', background: '#fff' }}>
+              <button className="lm-add-btn" style={{ minWidth: 80 }} onClick={() => setActivityModal({ open: false, rowIdx: null })}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {commentModal.open && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-content modal-content-smooth" style={{ minWidth: 380, maxWidth: 420, padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px 12px 24px', borderBottom: '1px solid #eee', fontWeight: 600, fontSize: 18 }}>Comments</div>
+            <div style={{ padding: 24, background: '#fafbfc', minHeight: 120 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Show previous comments */}
+                {(rowComments[commentModal.rowIdx ?? -1] || []).length === 0 && (
+                  <div style={{ color: '#888', fontSize: 14, textAlign: 'center' }}>No comments yet.</div>
+                )}
+                {(rowComments[commentModal.rowIdx ?? -1] || []).map((c, idx) => (
+                  <div key={idx} style={{ background: '#fff', borderRadius: 8, padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', marginBottom: 2 }}>
+                    <div style={{ fontSize: 15, marginBottom: 4 }}>{c.text}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#888' }}>
+                      <span style={{ background: '#f3f6f9', color: '#1976d2', borderRadius: 6, padding: '2px 8px', fontWeight: 500 }}> {c.user} </span>
+                      <span>{c.date}</span>
+                    </div>
+                  </div>
+                ))}
+                {/* New comment input */}
+                <textarea
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  placeholder="Write a comment..."
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #e0e0e0',
+                    minHeight: 48,
+                    fontFamily: 'inherit',
+                    fontSize: 14,
+                    background: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    outline: 'none',
+                    resize: 'vertical',
+                    transition: 'all 0.2s'
+                  }}
+                />
+              </div>
+            </div>
+            <div style={{ padding: 16, textAlign: 'right', borderTop: '1px solid #eee', background: '#fff', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="lm-add-btn" style={{ minWidth: 80 }} onClick={() => setCommentModal({ open: false, rowIdx: null })}>Cancel</button>
+              <button className="lm-save-btn" style={{ minWidth: 80 }} disabled={!newComment.trim()} onClick={() => {
+                if (commentModal.rowIdx !== null && newComment.trim()) {
+                  const now = new Date();
+                  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+                  setRowComments(prev => ({
+                    ...prev,
+                    [commentModal.rowIdx!]: [
+                      ...(prev[commentModal.rowIdx!] || []),
+                      { text: newComment, user: 'You', date: dateStr }
+                    ]
+                  }));
+                }
+                setCommentModal({ open: false, rowIdx: null });
+              }}>Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
