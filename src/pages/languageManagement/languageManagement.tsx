@@ -97,8 +97,8 @@ export default function LanuageMangement() {
   const handleDeleteRow = (rowIdx: number) => {
     setRows(rows => rows.filter((_, idx) => idx !== rowIdx));
   };
-  // Length check: green if all to_values <= 50 chars, else red
-  const isLengthOk = (vals: string[]) => vals.every(val => val.length <= 50);
+  // Length check: returns array of boolean values for each translation
+  const getLengthChecks = (vals: string[]) => vals.map(val => val.length <= 50);
 
   // Pagination
   const handlePageChange = (newPage: number) => {
@@ -200,14 +200,12 @@ export default function LanuageMangement() {
             <th>Translation</th>
             <th style={{ textAlign: 'center' }}>Length Check</th>
             <th style={{ textAlign: 'center' }}>Status</th>
-            <th></th>
-            <th></th>
-            <th style={{ textAlign: 'center' }}></th>
+            <th style={{ textAlign: 'center' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {pageData.length === 0 ? (
-            <tr><td colSpan={7} style={{ textAlign: 'center', color: '#888' }}>No strings found.</td></tr>
+            <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888' }}>No strings found.</td></tr>
           ) : pageData.map((row, rowIdx) => (
             <tr key={row.string_id}>
               <td>{row.string_id}</td>
@@ -237,7 +235,7 @@ export default function LanuageMangement() {
                     ))}
                   </div>
                   {/* Menu button at the end of the cell */}
-                  <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6, position: 'absolute', top: 0, right: 0 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'cell')}>
+                  <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6, position: 'absolute', top: 44, right: 0 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'cell')}>
                     <i className="fa-solid fa-ellipsis-vertical"></i>
                   </button>
                   {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === 'cell' && (
@@ -248,21 +246,24 @@ export default function LanuageMangement() {
                 </div>
               </td>
               <td style={{ textAlign: 'center' }}>
-                <span className={`lm-dot ${isLengthOk(row.to_values) ? 'green' : 'red'}`}></span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  {getLengthChecks(row.to_values).map((isOk, idx) => (
+                    <span key={idx} className={`lm-dot ${isOk ? 'green' : 'red'}`}></span>
+                  ))}
+                </div>
               </td>
               <td style={{ textAlign: 'center' }}>
                 <span>{row.status}</span>
               </td>
-              <td style={{ textAlign: 'center' }}>
-                <i className="fa-regular fa-comment-dots" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Comments"></i>
-              </td>
-              <td style={{ textAlign: 'center' }}>
-                <i className="fa-solid fa-clock-rotate-left" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Activity"></i>
-              </td>
               <td style={{ textAlign: 'center', position: 'relative' }}>
-                <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'row')}>
-                  <i className="fa-solid fa-ellipsis-vertical"></i>
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', minHeight: 80 }}>
+                  <i className="fa-regular fa-comment-dots" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Comments"></i>
+                  <i className="fa-solid fa-clock-rotate-left" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Activity"></i>
+                  {/* <button className="lm-edit-btn" style={{ background: 'transparent', color: '#1976d2', fontSize: 18, padding: 6 }} onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'row')}> */}
+                    {/* <i className="fa-solid fa-ellipsis-vertical"></i> */}
+                    <i className="fas fa-bars" style={{ fontSize: 18, color: '#888', cursor: 'pointer' }} title="Menu" onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'row')}></i>
+                  {/* </button> */}
+                </div>
                 {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === 'row' && (
                   <div style={{ position: 'absolute', right: 0, top: 30, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 8, zIndex: 10, minWidth: 120, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }} onMouseLeave={handleMenuClose}>
                     <button className="lm-edit-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => { handleEditRow((page - 1) * ROWS_PER_PAGE + rowIdx); handleMenuClose(); }}><i className="fa-solid fa-pen"></i> Edit</button>
