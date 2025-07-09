@@ -327,7 +327,7 @@ export default function LanuageMangement() {
                               padding: '8px 12px',
                               borderRadius: '8px',
                               border: '1px solid #e0e0e0',
-                              width: 180,
+                              width: "70%",
                               minHeight: 24,
                               resize: 'none',
                               fontFamily: 'inherit',
@@ -359,7 +359,7 @@ export default function LanuageMangement() {
                             }}
                             readOnly={!(toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx)}
                           />
-                          <span className={`lm-dot ${getLengthChecks(row.to_values)[idx] ? 'green' : 'red'}`} style={{ marginLeft: 12, marginRight: 4, alignSelf: 'center' }}></span>
+                          <span className={`lm-dot ${getLengthChecks(row.to_values)[idx] ? 'green' : 'red'}`} style={{ marginLeft: 16, marginRight: 8, alignSelf: 'center' }}></span>
                           {/* Menu button for each textarea */}
                           <div style={{ position: 'relative', marginLeft: 8 }}>
                             <button
