@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import "./languageManagement.css";
 
@@ -105,15 +105,13 @@ export default function LanuageMangement() {
   const [rows, setRows] = useState<TranslationRow[]>(initialRows);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [menuOpen, setMenuOpen] = useState<{ row: number, type: 'cell' | 'row' } | null>(null);
+  const [menuOpen, setMenuOpen] = useState<{ row: number, type: 'cell' | 'row' | `cell-${number}` } | null>(null);
   const [addModal, setAddModal] = useState(false);
   const [newString, setNewString] = useState({ string_id: "", from_value: "", to_values: [""], status: "" });
   const [fromLanguage, setFromLanguage] = useState(LANGUAGE_LIB[0].code);
   const [toValuesEdit, setToValuesEdit] = useState<{ row: number; idx: number } | null>(null);
-  const [editValue, setEditValue] = useState("");
   const [activityModal, setActivityModal] = useState<{ open: boolean, rowIdx: number | null }>({ open: false, rowIdx: null });
   const [commentModal, setCommentModal] = useState<{ open: boolean, rowIdx: number | null }>({ open: false, rowIdx: null });
-  const [commentFields, setCommentFields] = useState<string[]>([""]);
   // Update rowComments to store array of {text, user, date}
   type Comment = { text: string; user: string; date: string };
   const [rowComments, setRowComments] = useState<{ [rowIdx: number]: Comment[] }>({});
@@ -189,8 +187,35 @@ export default function LanuageMangement() {
   const fromLanguageName = getLanguageName(fromLanguage);
   const toLanguageName = getLanguageName(languageId as string);
 
-  const handleMenuOpen = (rowIdx: number, type: 'cell' | 'row') => setMenuOpen({ row: rowIdx, type });
+  const handleMenuOpen = (rowIdx: number, type: 'cell' | 'row' | `cell-${number}`) => setMenuOpen({ row: rowIdx, type });
   const handleMenuClose = () => setMenuOpen(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      const menu = document.getElementById('translation-menu-popover');
+      if (menu && !menu.contains(e.target as Node)) {
+        setMenuOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
+
+  const iconBtnStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'none',
+    border: 'none',
+    borderRadius: 6,
+    padding: '4px 6px',
+    fontSize: 15,
+    color: '#888',
+    cursor: 'pointer',
+    transition: 'background 0.18s, color 0.18s',
+    minWidth: 0
+  };
 
   return (
     <div className="lm-container">
@@ -288,19 +313,21 @@ export default function LanuageMangement() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
                       <span className="lm-to-lang-label lm-lang-label" style={{ color: '#1976d2' }}>{toLanguageName}:</span>
                       {row.to_values.map((val, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 2 }}>
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 2, position: 'relative' }}>
                           <textarea
                             value={val}
                             onChange={e => {
-                              handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, e.target.value);
-                              autoResizeTextarea(e.target);
+                              if (toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx) {
+                                handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, e.target.value);
+                                autoResizeTextarea(e.target);
+                              }
                             }}
                             className="lm-translation-value"
-                            style={{ 
-                              padding: '8px 12px', 
-                              borderRadius: '8px', 
-                              border: '1px solid #e0e0e0', 
-                              width: 180, 
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #e0e0e0',
+                              width: 180,
                               minHeight: 24,
                               resize: 'none',
                               fontFamily: 'inherit',
@@ -312,30 +339,103 @@ export default function LanuageMangement() {
                               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                               outline: 'none'
                             }}
-                            onFocus={(e) => {
+                            onFocus={e => {
                               setToValuesEdit({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, idx });
                               e.target.style.borderColor = '#1976d2';
                               e.target.style.backgroundColor = '#ffffff';
                               e.target.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.15)';
                             }}
-                            onBlur={(e) => {
+                            onBlur={e => {
                               setToValuesEdit(null);
                               e.target.style.borderColor = '#e0e0e0';
                               e.target.style.backgroundColor = '#fafafa';
                               e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
                             }}
                             rows={1}
-                            ref={(el) => {
+                            ref={el => {
                               if (el) {
                                 autoResizeTextarea(el);
                               }
                             }}
+                            readOnly={!(toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx)}
                           />
                           <span className={`lm-dot ${getLengthChecks(row.to_values)[idx] ? 'green' : 'red'}`} style={{ marginLeft: 12, marginRight: 4, alignSelf: 'center' }}></span>
-                          <span className="to-value-actions" style={{ display: 'flex', alignItems: 'flex-start', marginLeft: 4, marginTop: 4, opacity: (toValuesEdit && toValuesEdit.row === (page - 1) * ROWS_PER_PAGE + rowIdx && toValuesEdit.idx === idx) ? 1 : 0, transition: 'opacity 0.2s' }}>
-                            <button className="lm-edit-btn" style={{ marginLeft: 2, background: 'transparent', color: '#1976d2', boxShadow: 'none' }}><i className="fa-solid fa-pen"></i></button>
-                            <button className="lm-delete-btn" style={{ marginLeft: 2, background: 'transparent', color: '#d32f2f', boxShadow: 'none' }} onMouseDown={e => { e.preventDefault(); handleDeleteToValue((page - 1) * ROWS_PER_PAGE + rowIdx, idx); }}><i className="fa-solid fa-trash"></i></button>
-                          </span>
+                          {/* Menu button for each textarea */}
+                          <div style={{ position: 'relative', marginLeft: 8 }}>
+                            <button
+                              className="lm-edit-btn"
+                              style={{
+                                background: 'transparent',
+                                color: '#1976d2',
+                                fontSize: 18,
+                                padding: 4,
+                                border: 'none',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => setMenuOpen({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, type: `cell-${idx}` as any })}
+                            >
+                              <i className="fa-solid fa-bars"></i>
+                            </button>
+                            {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === `cell-${idx}` && (
+                              <div
+                                id="translation-menu-popover"
+                                style={{
+                                  position: 'absolute',
+                                  left: '110%',
+                                  top: 0,
+                                  background: 'linear-gradient(135deg, #f8fafc 0%, #e3f0ff 100%)',
+                                  boxShadow: '0 4px 16px rgba(25, 118, 210, 0.10)',
+                                  border: '1px solid #e3e8ee',
+                                  borderRadius: 10,
+                                  zIndex: 10,
+                                  minWidth: 0,
+                                  padding: '4px 6px',
+                                  display: 'flex',
+                                  flexDirection: 'row', // horizontal
+                                  gap: 4,
+                                  alignItems: 'center',
+                                  animation: 'fadeInMenu 0.25s ease'
+                                }}
+                              >
+                                <button title="Delete" style={iconBtnStyle} onClick={() => {
+                                  handleDeleteToValue((page - 1) * ROWS_PER_PAGE + rowIdx, idx);
+                                  handleMenuClose();
+                                }}><i className="fa-solid fa-trash"></i></button>
+                                <button title="Approve" style={{...iconBtnStyle, color: '#388e3c'}} onClick={() => {
+                                  setRows(rows =>
+                                    rows.map((row, rIdx) =>
+                                      rIdx === (page - 1) * ROWS_PER_PAGE + rowIdx
+                                        ? { ...row, status: 'Approved' }
+                                        : row
+                                    )
+                                  );
+                                  handleMenuClose();
+                                }}><i className="fa-solid fa-check-circle"></i></button>
+                                <button title="Reject" style={{...iconBtnStyle, color: '#f44336'}} onClick={() => {
+                                  setRows(rows =>
+                                    rows.map((row, rIdx) =>
+                                      rIdx === (page - 1) * ROWS_PER_PAGE + rowIdx
+                                        ? { ...row, status: 'Rejected' }
+                                        : row
+                                    )
+                                  );
+                                  handleMenuClose();
+                                }}><i className="fa-solid fa-times-circle"></i></button>
+                                <button title="Clear" style={{...iconBtnStyle, color: '#1976d2'}} onClick={() => {
+                                  handleToValueChange((page - 1) * ROWS_PER_PAGE + rowIdx, idx, "");
+                                  handleMenuClose();
+                                }}><i className="fa-solid fa-eraser"></i></button>
+                                <button title="Edit" style={{...iconBtnStyle, color: '#1976d2'}} onClick={() => {
+                                  setToValuesEdit({ row: (page - 1) * ROWS_PER_PAGE + rowIdx, idx });
+                                  handleMenuClose();
+                                }}><i className="fa-solid fa-pen"></i></button>
+                                <button title="Suggest" style={{...iconBtnStyle, color: '#FFD600'}} onClick={() => {
+                                  alert("Show suggestions for: " + val);
+                                  handleMenuClose();
+                                }}><i className="fa-solid fa-lightbulb"></i></button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -356,7 +456,7 @@ export default function LanuageMangement() {
                       }} 
                       onClick={() => handleMenuOpen((page - 1) * ROWS_PER_PAGE + rowIdx, 'cell')}
                     >
-                      <i className="fa-solid fa-bars"></i>
+                      <i className="fa-solid fa-plus"></i>
                     </button>
                     {menuOpen && menuOpen.row === (page - 1) * ROWS_PER_PAGE + rowIdx && menuOpen.type === 'cell' && (
                       <div style={{ 
