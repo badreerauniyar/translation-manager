@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./projects.css";
+import {getAllProjectsAndItsUsers} from "../../api"
 
 interface Project {
   id: number;
@@ -159,7 +160,14 @@ export default function Projects() {
     setProjects(projects.filter(p => p.id !== confirm.project?.id));
     closeConfirm();
   };
+  useEffect(()=>{
+    //function to get all porjetc details from backend
+    getAllProducts()
+  },[])
 
+  function getAllProducts(){
+    const result=getAllProjectsAndItsUsers() 
+  }
   return (
     <div className="projects-mgmt-container">
       <div className="projects-mgmt-header-flex">
