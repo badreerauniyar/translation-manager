@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./projects.css";
-import {getAllProjectsAndItsUsers} from "../../api"
+import { getAllProjectsAndItsUsers } from "../../api"
 
 interface Project {
   id: number;
@@ -103,7 +103,7 @@ function SearchBox({ value, onChange }: { value: string; onChange: (v: string) =
     }
   }, [focused]);
   return (
-    <div className={`searchbox-container${focused ? ' focused' : ''}`}> 
+    <div className={`searchbox-container${focused ? ' focused' : ''}`}>
       <i className="fa-solid fa-magnifying-glass searchbox-icon" onClick={() => setFocused(true)} style={{ cursor: 'pointer' }}></i>
       <input
         ref={inputRef}
@@ -160,14 +160,19 @@ export default function Projects() {
     setProjects(projects.filter(p => p.id !== confirm.project?.id));
     closeConfirm();
   };
-  useEffect(()=>{
-    //function to get all porjetc details from backend
-    getAllProducts()
-  },[])
+  useEffect(() => {
+    console.log("starrting point")
+    getAllProjectsAndItsUsers()
+      .then((res: { data: Project[] }) => {
+        console.log("Projects fetched:", res.data);
+        // Optionally: setProjects(res.data);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching projects:", err);
+      });
+  }, []);
 
-  function getAllProducts(){
-    const result=getAllProjectsAndItsUsers() 
-  }
+
   return (
     <div className="projects-mgmt-container">
       <div className="projects-mgmt-header-flex">
